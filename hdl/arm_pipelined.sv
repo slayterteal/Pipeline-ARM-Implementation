@@ -109,6 +109,7 @@ module arm (input  logic        clk, reset,
                  .MemtoRegW(MemtoRegW),
                  .PCSrcW(PCSrcW),
                  .RegWriteW(RegWriteW),
+                 
                  // hazard interface
                  .RegWriteM(RegWriteM),
                  .MemtoRegE(MemtoRegE),
