@@ -366,205 +366,206 @@ module datapath (input  logic        clk, reset,
    logic [2:0]  RegSrcE, RegSrcM, RegSrcW;
       
    // Fetch stage
-   mux2 #(32) pcnextmux (.d0(PCPlus4F),
-                         .d1(ResultW),
-                         .s(PCSrcW),
-                         .y(PCnext1F));
-   mux2 #(32) branchmux (.d0(PCnext1F),
-                         .d1(ALUResultE),
-                         .s(BranchTakenE),
-                         .y(PCnextF));
-   flopenr #(32) pcreg (.clk(clk),
-                        .reset(reset),
-                        .en(~StallF & MemSysReady),
-                        .d(PCnextF),
-                        .q(PCF));
-   adder #(32) pcadd (.a(PCF),
+  mux2 #(32) pcnextmux (.d0(PCPlus4F),
+                        .d1(ResultW),
+                        .s(PCSrcW),
+                        .y(PCnext1F));
+  mux2 #(32) branchmux (.d0(PCnext1F),
+                        .d1(ALUResultE),
+                        .s(BranchTakenE),
+                        .y(PCnextF));
+  flopenr #(32) pcreg (.clk(clk),
+                      .reset(reset),
+                      .en(~StallF & MemSysReady),
+                      .d(PCnextF),
+                      .q(PCF));
+  // PC + 4
+  adder #(32) pcadd (.a(PCF),
                       .b(32'h4),
                       .y(PCPlus4F));
    
-   // Decode Stage
-   assign PCPlus8D = PCPlus4F; // skip register
-   flopenrc #(32) instrreg (.clk(clk),
-                            .reset(reset),
-                            .en(~StallD & MemSysReady),
-                            .clear(FlushD),
-                            .d(InstrF),
-                            .q(InstrD));
-   flopenrc #(32) pcadd4d (.clk(clk),
-                           .reset(reset),
-                           .en(~StallD & MemSysReady),
-                           .clear(FlushD),
-                           .d(PCPlus4F),
-                           .q(PCPlus4D));
-   mux2 #(4)   ra1mux (.d0(InstrD[19:16]),
-                       .d1(4'b1111),
-                       .s(RegSrcD[0]),
-                       .y(RA1D));
-   mux2 #(4)   ra2mux (.d0(InstrD[3:0]),
-                       .d1(InstrD[15:12]),
-                       .s(RegSrcD[1]),
-                       .y(RA2D));
-   mux2 #(4)   ra3mux (.d0(WA3W),
-                       .d1(4'hE),
-                       .s(RegSrcW[2]),
-                       .y(RA3D));
-   mux2 #(32)  ra4mux (.d0(ResultW),
-                       .d1(PCPlus4W),
-                       .s(RegSrcW[2]),
-                       .y(RA4D));   
-   regfile     rf (.clk(clk),
-                   .we3(RegWriteW),
-                   .ra1(RA1D),
-                   .ra2(RA2D),
-                   .wa3(RA3D),
-                   .wd3(RA4D),
-                   .r15(PCPlus8D), 
-                   .rd1(rd1D),
-                   .rd2(rd2D)); 
-   extend      ext (.Instr(InstrD[23:0]),
-                    .ImmSrc(ImmSrcD),
-                    .ExtImm(ExtImmD));
+  // Decode Stage
+  assign PCPlus8D = PCPlus4F; // skip register
+  flopenrc #(32) instrreg (.clk(clk),
+                          .reset(reset),
+                          .en(~StallD & MemSysReady),
+                          .clear(FlushD),
+                          .d(InstrF),
+                          .q(InstrD));
+  flopenrc #(32) pcadd4d (.clk(clk),
+                          .reset(reset),
+                          .en(~StallD & MemSysReady),
+                          .clear(FlushD),
+                          .d(PCPlus4F),
+                          .q(PCPlus4D));
+  mux2 #(4)   ra1mux (.d0(InstrD[19:16]),
+                      .d1(4'b1111),
+                      .s(RegSrcD[0]),
+                      .y(RA1D));
+  mux2 #(4)   ra2mux (.d0(InstrD[3:0]),
+                      .d1(InstrD[15:12]),
+                      .s(RegSrcD[1]),
+                      .y(RA2D));
+  mux2 #(4)   ra3mux (.d0(WA3W),
+                      .d1(4'hE),
+                      .s(RegSrcW[2]),
+                      .y(RA3D));
+  mux2 #(32)  ra4mux (.d0(ResultW),
+                      .d1(PCPlus4W),
+                      .s(RegSrcW[2]),
+                      .y(RA4D));   
+  regfile     rf (.clk(clk),
+                  .we3(RegWriteW),
+                  .ra1(RA1D),
+                  .ra2(RA2D),
+                  .wa3(RA3D),
+                  .wd3(RA4D),
+                  .r15(PCPlus8D), 
+                  .rd1(rd1D),
+                  .rd2(rd2D)); 
+  extend      ext (.Instr(InstrD[23:0]),
+                  .ImmSrc(ImmSrcD),
+                  .ExtImm(ExtImmD));
    
-   // Execute Stage
-   flopenr #(32) rd1reg (.clk(clk),
-                       .reset(reset),
-                       .en(MemSysReady),
-                       .d(rd1D),
-                       .q(rd1E));
-   flopenr #(32) rd2reg (.clk(clk),
-                       .reset(reset),
-                       .en(MemSysReady),
-                       .d(rd2D),
-                       .q(rd2E));
-   flopenr #(32) immreg (.clk(clk),
-                       .reset(reset),
-                       .en(MemSysReady),
-                       .d(ExtImmD),
-                       .q(ExtImmE));
-   flopenr #(4)  wa3ereg (.clk(clk),
+  // Execute Stage
+  flopenr #(32) rd1reg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(rd1D),
+                      .q(rd1E));
+  flopenr #(32) rd2reg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(rd2D),
+                      .q(rd2E));
+  flopenr #(32) immreg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(ExtImmD),
+                      .q(ExtImmE));
+  flopenr #(4)  wa3ereg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(InstrD[15:12]),
+                      .q(WA3E));
+  flopenr #(4)  ra1reg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(RA1D),
+                      .q(RA1E));
+  flopenr #(4)  ra2reg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(RA2D),
+                      .q(RA2E));
+  flopenr #(32) pcadd4e (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(PCPlus4D),
+                      .q(PCPlus4E));
+  flopenr #(3)  regsrce (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(RegSrcD),
+                      .q(RegSrcE));
+  mux3 #(32)  byp1mux (.d0(rd1E),
+                      .d1(ResultW),
+                      .d2(ALUOutM),
+                      .s(ForwardAE),
+                      .y(SrcAE));
+  mux3 #(32)  byp2mux (.d0(rd2E),
+                      .d1(ResultW),
+                      .d2(ALUOutM),
+                      .s(ForwardBE),
+                      .y(WriteDataE));
+  mux2 #(32)  srcbmux (.d0(WriteDataE),
+                      .d1(ExtImmE),
+                      .s(ALUSrcE),
+                      .y(SrcBE));
+  alu         alu (.a(SrcAE),
+                  .b(SrcBE),
+                  .ALUControl(ALUControlE),
+                  .Result(ALUResultE),
+                  .Flags(ALUFlagsE));
+  
+  // Memory Stage
+  flopenr #(32) aluresreg (.clk(clk),
+                          .reset(reset),
+                          .en(MemSysReady),
+                          .d(ALUResultE),
+                          .q(ALUOutM));
+  flopenr #(32) wdreg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(WriteDataE),
+                      .q(WriteDataM));
+  flopenr #(4)  wa3mreg (.clk(clk),
                         .reset(reset),
                         .en(MemSysReady),
-                        .d(InstrD[15:12]),
-                        .q(WA3E));
-   flopenr #(4)  ra1reg (.clk(clk),
-                       .reset(reset),
-                       .en(MemSysReady),
-                       .d(RA1D),
-                       .q(RA1E));
-   flopenr #(4)  ra2reg (.clk(clk),
-                       .reset(reset),
-                       .en(MemSysReady),
-                       .d(RA2D),
-                       .q(RA2E));
-   flopenr #(32) pcadd4e (.clk(clk),
+                        .d(WA3E),
+                        .q(WA3M));
+  flopenr #(32) pcadd4m (.clk(clk),
                         .reset(reset),
                         .en(MemSysReady),
-                        .d(PCPlus4D),
-                        .q(PCPlus4E));
-   flopenr #(3)  regsrce (.clk(clk),
+                        .d(PCPlus4E),
+                        .q(PCPlus4M));
+  flopenr #(3)  regsrcm (.clk(clk),
                         .reset(reset),
                         .en(MemSysReady),
-                        .d(RegSrcD),
-                        .q(RegSrcE));
-   mux3 #(32)  byp1mux (.d0(rd1E),
-                        .d1(ResultW),
-                        .d2(ALUOutM),
-                        .s(ForwardAE),
-                        .y(SrcAE));
-   mux3 #(32)  byp2mux (.d0(rd2E),
-                        .d1(ResultW),
-                        .d2(ALUOutM),
-                        .s(ForwardBE),
-                        .y(WriteDataE));
-   mux2 #(32)  srcbmux (.d0(WriteDataE),
-                        .d1(ExtImmE),
-                        .s(ALUSrcE),
-                        .y(SrcBE));
-   alu         alu (.a(SrcAE),
-                    .b(SrcBE),
-                    .ALUControl(ALUControlE),
-                    .Result(ALUResultE),
-                    .Flags(ALUFlagsE));
-   
-   // Memory Stage
-   flopenr #(32) aluresreg (.clk(clk),
-                            .reset(reset),
-                            .en(MemSysReady),
-                            .d(ALUResultE),
-                            .q(ALUOutM));
-   flopenr #(32) wdreg (.clk(clk),
+                        .d(RegSrcE),
+                        .q(RegSrcM));
+  
+  // Writeback Stage
+  flopenr #(32) aluoutreg (.clk(clk),
+                          .reset(reset),
+                          .en(MemSysReady),
+                          .d(ALUOutM),
+                          .q(ALUOutW));
+  flopenr #(32) rdreg (.clk(clk),
+                      .reset(reset),
+                      .en(MemSysReady),
+                      .d(ReadDataM),
+                      .q(ReadDataW));
+  flopenr #(4)  wa3wreg (.clk(clk),
                         .reset(reset),
                         .en(MemSysReady),
-                        .d(WriteDataE),
-                        .q(WriteDataM));
-   flopenr #(4)  wa3mreg (.clk(clk),
-                          .reset(reset),
-                          .en(MemSysReady),
-                          .d(WA3E),
-                          .q(WA3M));
-   flopenr #(32) pcadd4m (.clk(clk),
-                          .reset(reset),
-                          .en(MemSysReady),
-                          .d(PCPlus4E),
-                          .q(PCPlus4M));
-   flopenr #(3)  regsrcm (.clk(clk),
-                          .reset(reset),
-                          .en(MemSysReady),
-                          .d(RegSrcE),
-                          .q(RegSrcM));
-   
-   // Writeback Stage
-   flopenr #(32) aluoutreg (.clk(clk),
-                            .reset(reset),
-                            .en(MemSysReady),
-                            .d(ALUOutM),
-                            .q(ALUOutW));
-   flopenr #(32) rdreg (.clk(clk),
+                        .d(WA3M),
+                        .q(WA3W));
+  flopenr #(32) pcadd4w (.clk(clk),
                         .reset(reset),
                         .en(MemSysReady),
-                        .d(ReadDataM),
-                        .q(ReadDataW));
-   flopenr #(4)  wa3wreg (.clk(clk),
-                          .reset(reset),
-                          .en(MemSysReady),
-                          .d(WA3M),
-                          .q(WA3W));
-   flopenr #(32) pcadd4w (.clk(clk),
-                          .reset(reset),
-                          .en(MemSysReady),
-                          .d(PCPlus4M),
-                          .q(PCPlus4W));
-   flopenr #(3)  regsrcw (.clk(clk),
-                          .reset(reset),
-                          .en(MemSysReady),
-                          .d(RegSrcM),
-                          .q(RegSrcW));
-   mux2 #(32)  resmux (.d0(ALUOutW),
-                       .d1(ReadDataW),
-                       .s(MemtoRegW),
-                       .y(ResultW));
-   
-   // hazard comparison
-   eqcmp #(4) m0 (.a(WA3M),
-                  .b(RA1E),
-                  .y(Match_1E_M));
-   eqcmp #(4) m1 (.a(WA3W),
-                  .b(RA1E),
-                  .y(Match_1E_W));
-   eqcmp #(4) m2 (.a(WA3M),
-                  .b(RA2E),
-                  .y(Match_2E_M));
-   eqcmp #(4) m3 (.a(WA3W),
-                  .b(RA2E),
-                  .y(Match_2E_W));
-   eqcmp #(4) m4a (.a(WA3E),
-                   .b(RA1D),
-                   .y(Match_1D_E));
-   eqcmp #(4) m4b (.a(WA3E),
-                   .b(RA2D),
-                   .y(Match_2D_E));
-   assign Match_12D_E = Match_1D_E | Match_2D_E;
+                        .d(PCPlus4M),
+                        .q(PCPlus4W));
+  flopenr #(3)  regsrcw (.clk(clk),
+                        .reset(reset),
+                        .en(MemSysReady),
+                        .d(RegSrcM),
+                        .q(RegSrcW));
+  mux2 #(32)  resmux (.d0(ALUOutW),
+                      .d1(ReadDataW),
+                      .s(MemtoRegW),
+                      .y(ResultW));
+  
+  // hazard comparison
+  eqcmp #(4) m0 (.a(WA3M),
+                .b(RA1E),
+                .y(Match_1E_M));
+  eqcmp #(4) m1 (.a(WA3W),
+                .b(RA1E),
+                .y(Match_1E_W));
+  eqcmp #(4) m2 (.a(WA3M),
+                .b(RA2E),
+                .y(Match_2E_M));
+  eqcmp #(4) m3 (.a(WA3W),
+                .b(RA2E),
+                .y(Match_2E_W));
+  eqcmp #(4) m4a (.a(WA3E),
+                  .b(RA1D),
+                  .y(Match_1D_E));
+  eqcmp #(4) m4b (.a(WA3E),
+                  .b(RA2D),
+                  .y(Match_2D_E));
+  assign Match_12D_E = Match_1D_E | Match_2D_E;
    
 endmodule // datapath
 
@@ -579,9 +580,32 @@ module hazard (input  logic       clk, reset,
                output logic       FlushD, FlushE);
 
    logic ldrStallD;
+  /* 
+    Match_1E_M = (RA1E == WA3M)
+    Match_1E_w = (RA1E == WA3w)
+    Match_2E_M = (RA2E == WA3M)
+    Match_2E_w = (RA2E == WA3w)
 
-   // forwarding logic
-   always_comb begin
+    These values are calculated within the control
+    (in the eqcmp Modules).
+  */
+  
+  // stalls and flushes
+  /* Load RAW
+    When an instruction reads a register loaded by the previous,
+    stall in the decode stage until it is ready
+
+    Stalls are supported by adding enable inputs (StallF and StallD) to the 
+    Fetch and Decode pipline registers respectively. A Synchronous reset/clear
+    input (FlushE) to the Execute pipeline register.
+
+    Most RAW hazards are handled by the forwarding logic. An Exception has to be made
+    for LDR however. 
+  */  
+
+  // forwarding logic
+  always_comb 
+    begin
       if (Match_1E_M & RegWriteM)      ForwardAE = 2'b10;
       else if (Match_1E_W & RegWriteW) ForwardAE = 2'b01;
       else                             ForwardAE = 2'b00;
@@ -589,19 +613,22 @@ module hazard (input  logic       clk, reset,
       if (Match_2E_M & RegWriteM)      ForwardBE = 2'b10;
       else if (Match_2E_W & RegWriteW) ForwardBE = 2'b01;
       else                             ForwardBE = 2'b00;
-   end
-   
-   // stalls and flushes
-   // Load RAW
-   //   when an instruction reads a register loaded by the previous,
-   //   stall in the decode stage until it is ready
-   // Branch hazard
-   //   When a branch is taken, flush the incorrectly fetched instrs
-   //   from decode and execute stages
-   // PC Write Hazard
-   //   When the PC might be written, stall all following instructions
-   //   by stalling the fetch and flushing the decode stage
-   // when a stage stalls, stall all previous and flush next
+    end 
+
+    // LDR Hazard
+    ldrStallD = Match_12D_E & MemtoRegE;
+    StallF = StallD = FlushE = ldrStallD;
+
+
+   /* 
+    Branch hazard
+      When a branch is taken, flush the incorrectly fetched instrs
+      from decode and execute stages
+    PC Write Hazard
+      When the PC might be written, stall all following instructions
+      by stalling the fetch and flushing the decode stage
+    when a stage stalls, stall all previous and flush next
+   */
    
    assign ldrStallD = Match_12D_E & MemtoRegE;
    
