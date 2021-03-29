@@ -26,7 +26,7 @@ if [file exists work] {
 }
 vlib work
 
-set MEMORY_FILE ./memfile.dat
+set MEMORY_FILE ./fib.dat
 
 # compile source files
 vlog imem.v dmem.v arm_pipelined.sv top.sv tb.sv
@@ -47,6 +47,8 @@ add wave -noupdate -divider -height 32 "Datapath"
 add wave -hex /testbench/dut/arm/dp/*
 add wave -noupdate -divider -height 32 "Control"
 add wave -hex /testbench/dut/arm/c/*
+add wave -noupdate -divider -height 32 "Hazard"
+add wave -hex /testbench/dut/arm/h/*
 add wave -noupdate -divider -height 32 "Data Memory"
 add wave -hex /testbench/dut/dmem/*
 add wave -noupdate -divider -height 32 "Instruction Memory"
@@ -69,7 +71,7 @@ configure wave -rowmargin 4
 configure wave -childrowmargin 2
 
 -- Run the Simulation
-run 1000 ns
+run 3000 ns
 
 -- Save memory for checking (if needed)
 mem save -outfile dmemory.dat -wordsperline 1 /testbench/dut/dmem/RAM
