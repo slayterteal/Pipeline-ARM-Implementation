@@ -26,7 +26,7 @@ if [file exists work] {
 }
 vlib work
 
-set MEMORY_FILE ./fib.dat
+set MEMORY_FILE ./test_inputs/brtest0.dat
 
 # compile source files
 vlog imem.v dmem.v arm_pipelined.sv top.sv tb.sv
@@ -45,6 +45,8 @@ mem load -startaddress 0 -i ${MEMORY_FILE} -format hex /testbench/dut/imem/RAM
 # add wave -hex -r /stimulus/*
 add wave -noupdate -divider -height 32 "Datapath"
 add wave -hex /testbench/dut/arm/dp/*
+add wave -noupdate -divider -height 32 "ALU"
+add wave -hex /testbench/dut/arm/dp/alu/*
 add wave -noupdate -divider -height 32 "Control"
 add wave -hex /testbench/dut/arm/c/*
 add wave -noupdate -divider -height 32 "Hazard"
